@@ -12,16 +12,16 @@ import UIKit
 class AppDelegate: UIResponder, UIApplicationDelegate {
     
     var window: UIWindow? = {
-        let window = UIWindow(frame: UIScreen.mainScreen().bounds)
-        window.backgroundColor = .whiteColor()
+        let window = UIWindow(frame: UIScreen.main.bounds)
+        window.backgroundColor = .white
         
         return window
     }()
-    
-    func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject : AnyObject]?) -> Bool {
+
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey : Any]? = nil) -> Bool {
         window?.rootViewController = ViewController()
         window?.makeKeyAndVisible()
-        
+
         return true
     }
     
