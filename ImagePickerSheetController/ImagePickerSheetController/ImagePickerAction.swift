@@ -15,7 +15,7 @@ public enum ImagePickerActionStyle {
 
 public class ImagePickerAction {
     
-    public typealias Title = Int -> String
+    public typealias Title = (Int) -> String
     public typealias Handler = (ImagePickerAction) -> ()
     public typealias SecondaryHandler = (ImagePickerAction, Int) -> ()
     
@@ -34,16 +34,17 @@ public class ImagePickerAction {
     /// Initializes a new ImagePickerAction. The secondary title and handler are used when at least 1 image has been selected.
     /// Secondary title defaults to title if not specified.
     /// Secondary handler defaults to handler if not specified.
-    public convenience init(title: String, secondaryTitle: String? = nil, style: ImagePickerActionStyle = .Default, handler: Handler, secondaryHandler: SecondaryHandler? = nil) {
+    public convenience init(title: String, secondaryTitle: String? = nil, style: ImagePickerActionStyle = .Default, handler: @escaping Handler, secondaryHandler: SecondaryHandler? = nil) {
         self.init(title: title, secondaryTitle: secondaryTitle.map { string in { _ in string }}, style: style, handler: handler, secondaryHandler: secondaryHandler)
     }
     
     /// Initializes a new ImagePickerAction. The secondary title and handler are used when at least 1 image has been selected.
     /// Secondary title defaults to title if not specified. Use the closure to format a title according to the selection.
     /// Secondary handler defaults to handler if not specified
-    public init(title: String, secondaryTitle: Title?, style: ImagePickerActionStyle = .Default, handler: Handler, var secondaryHandler: SecondaryHandler? = nil) {
-        if secondaryHandler == nil {
-            secondaryHandler = { action, _ in
+    public init(title: String, secondaryTitle: Title?, style: ImagePickerActionStyle = .Default, handler: @escaping Handler, secondaryHandler: SecondaryHandler? = nil) {
+        var secondHandler: SecondaryHandler? = secondaryHandler
+        if secondHandler == nil {
+            secondHandler = { action, _ in
                 handler(action)
             }
         }
@@ -52,7 +53,7 @@ public class ImagePickerAction {
         self.secondaryTitle = secondaryTitle ?? { _ in title }
         self.style = style
         self.handler = handler
-        self.secondaryHandler = secondaryHandler!
+        self.secondaryHandler = secondHandler!
     }
     
     func handle(numberOfImages: Int = 0) {
@@ -66,7 +67,7 @@ public class ImagePickerAction {
     
 }
 
-func ?? (left: ImagePickerAction.Title?, right: ImagePickerAction.Title) -> ImagePickerAction.Title {
+func ?? (left: ImagePickerAction.Title?, right: @escaping ImagePickerAction.Title) -> ImagePickerAction.Title {
     if let left = left {
         return left
     }

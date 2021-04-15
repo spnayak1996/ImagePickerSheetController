@@ -18,10 +18,10 @@ class SheetController: NSObject {
         collectionView.dataSource = self
         collectionView.delegate = self
         collectionView.accessibilityIdentifier = "ImagePickerSheet"
-        collectionView.backgroundColor = .clearColor()
+        collectionView.backgroundColor = .clear
         collectionView.alwaysBounceVertical = false
-        collectionView.registerClass(SheetPreviewCollectionViewCell.self, forCellWithReuseIdentifier: NSStringFromClass(SheetPreviewCollectionViewCell.self))
-        collectionView.registerClass(SheetActionCollectionViewCell.self, forCellWithReuseIdentifier: NSStringFromClass(SheetActionCollectionViewCell.self))
+        collectionView.register(SheetPreviewCollectionViewCell.self, forCellWithReuseIdentifier: NSStringFromClass(SheetPreviewCollectionViewCell.self))
+        collectionView.register(SheetActionCollectionViewCell.self, forCellWithReuseIdentifier: NSStringFromClass(SheetActionCollectionViewCell.self))
         
         return collectionView
     }()
@@ -36,8 +36,8 @@ class SheetController: NSObject {
     var numberOfSelectedImages = 0
     
     var preferredSheetHeight: CGFloat {
-        return allIndexPaths().map { self.sizeForSheetItemAtIndexPath($0).height }
-            .reduce(0, combine: +)
+        return allIndexPaths().map { self.sizeForSheetItemAtIndexPath(indexPath: $0).height }
+            .reduce(0, +)
     }
     
     var preferredSheetWidth: CGFloat {
@@ -70,15 +70,15 @@ class SheetController: NSObject {
         return actions.count
     }
     
-    private func allIndexPaths() -> [NSIndexPath] {
+    private func allIndexPaths() -> [IndexPath] {
         let s = numberOfSections()
-        return (0 ..< s).map { (self.numberOfItemsInSection($0), $0) }
+        return (0 ..< s).map { (self.numberOfItemsInSection(section: $0), $0) }
                         .flatMap { numberOfItems, section in
-                            (0 ..< numberOfItems).map { NSIndexPath(forItem: $0, inSection: section) }
+                            (0 ..< numberOfItems).map { IndexPath(item: $0, section: section) }
                         }
     }
     
-    private func sizeForSheetItemAtIndexPath(indexPath: NSIndexPath) -> CGSize {
+    private func sizeForSheetItemAtIndexPath(indexPath: IndexPath) -> CGSize {
         let height: CGFloat = {
             if indexPath.section == 0 {
                 return previewHeight
@@ -93,7 +93,7 @@ class SheetController: NSObject {
                 actionItemHeight = 50
             }
             
-            let insets = attributesForItemAtIndexPath(indexPath).backgroundInsets
+            let insets = attributesForItemAtIndexPath(indexPath: indexPath).backgroundInsets
             return actionItemHeight + insets.top + insets.bottom
         }()
         
@@ -102,7 +102,7 @@ class SheetController: NSObject {
     
     // MARK: - Design
     
-    private func attributesForItemAtIndexPath(indexPath: NSIndexPath) -> (corners: RoundedCorner, backgroundInsets: UIEdgeInsets) {
+    private func attributesForItemAtIndexPath(indexPath: IndexPath) -> (corners: RoundedCorner, backgroundInsets: UIEdgeInsets) {
         guard #available(iOS 9, *) else {
             return (.None, UIEdgeInsets())
         }
@@ -115,8 +115,8 @@ class SheetController: NSObject {
             return (.Top(cornerRadius), UIEdgeInsets(top: 0, left: defaultInset, bottom: 0, right: defaultInset))
         }
         
-        let cancelIndexPath = actions.indexOf { $0.style == ImagePickerActionStyle.Cancel }
-                                     .map { NSIndexPath(forItem: $0, inSection: 1) }
+        let cancelIndexPath = actions.firstIndex(where: { $0.style == ImagePickerActionStyle.Cancel })
+                                     .map { IndexPath(item: $0, section: 1) }
         
         
         if let cancelIndexPath = cancelIndexPath {
@@ -139,16 +139,16 @@ class SheetController: NSObject {
     
     private func fontForAction(action: ImagePickerAction) -> UIFont {
         guard #available(iOS 9, *), action.style == .Cancel else {
-            return UIFont.systemFontOfSize(21)
+            return UIFont.systemFont(ofSize: 21)
         }
         
-        return UIFont.boldSystemFontOfSize(21)
+        return UIFont.boldSystemFont(ofSize: 21)
     }
     
     // MARK: - Actions
     
     func reloadActionItems() {
-        sheetCollectionView.reloadSections(NSIndexSet(index: 1))
+        sheetCollectionView.reloadSections(IndexSet(integer: 1))
     }
     
     func addAction(action: ImagePickerAction) {
@@ -158,8 +158,8 @@ class SheetController: NSObject {
         
         actions.append(action)
         
-        if let index = actions.indexOf({ $0.style == .Cancel }) {
-            let cancelAction = actions.removeAtIndex(index)
+        if let index = actions.firstIndex(where: { $0.style == .Cancel }) {
+            let cancelAction = actions.remove(at: index)
             actions.append(cancelAction)
         }
         
@@ -168,7 +168,7 @@ class SheetController: NSObject {
     
     private func handleAction(action: ImagePickerAction) {
         actionHandlingCallback?()
-        action.handle(numberOfSelectedImages)
+        action.handle(numberOfImages: numberOfSelectedImages)
     }
     
     func handleCancelAction() {
@@ -176,7 +176,7 @@ class SheetController: NSObject {
                                   .first
         
         if let cancelAction = cancelAction {
-            handleAction(cancelAction)
+            handleAction(action: cancelAction)
         }
         else {
             actionHandlingCallback?()
@@ -200,23 +200,23 @@ extension SheetController: UICollectionViewDataSource {
         return numberOfSections()
     }
     
-    func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return numberOfItemsInSection(section)
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return numberOfItemsInSection(section: section)
     }
     
-    func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell: SheetCollectionViewCell
         
         if indexPath.section == 0 {
-            let previewCell = collectionView.dequeueReusableCellWithReuseIdentifier(NSStringFromClass(SheetPreviewCollectionViewCell.self), forIndexPath: indexPath) as! SheetPreviewCollectionViewCell
+            let previewCell = collectionView.dequeueReusableCell(withReuseIdentifier: NSStringFromClass(SheetPreviewCollectionViewCell.self), for: indexPath) as! SheetPreviewCollectionViewCell
             previewCell.collectionView = previewCollectionView
             
             cell = previewCell
         }
         else {
             let action = actions[indexPath.item]
-            let actionCell = collectionView.dequeueReusableCellWithReuseIdentifier(NSStringFromClass(SheetActionCollectionViewCell.self), forIndexPath: indexPath) as! SheetActionCollectionViewCell
-            actionCell.textLabel.font = fontForAction(action)
+            let actionCell = collectionView.dequeueReusableCell(withReuseIdentifier: NSStringFromClass(SheetActionCollectionViewCell.self), for: indexPath) as! SheetActionCollectionViewCell
+            actionCell.textLabel.font = fontForAction(action: action)
             actionCell.textLabel.text = numberOfSelectedImages > 0 ? action.secondaryTitle(numberOfSelectedImages) : action.title
             
             cell = actionCell
@@ -225,14 +225,14 @@ extension SheetController: UICollectionViewDataSource {
         cell.separatorVisible = (indexPath.section == 1)
         
         // iOS specific design
-        (cell.roundedCorners, cell.backgroundInsets) = attributesForItemAtIndexPath(indexPath)
+        (cell.roundedCorners, cell.backgroundInsets) = attributesForItemAtIndexPath(indexPath: indexPath)
         if #available(iOS 9, *) {
             cell.normalBackgroundColor = UIColor(white: 0.97, alpha: 1)
             cell.highlightedBackgroundColor = UIColor(white: 0.92, alpha: 1)
             cell.separatorColor = UIColor(white: 0.84, alpha: 1)
         }
         else {
-            cell.normalBackgroundColor = .whiteColor()
+            cell.normalBackgroundColor = .white
             cell.highlightedBackgroundColor = UIColor(white: 0.85, alpha: 1)
             cell.separatorColor = UIColor(white: 0.784, alpha: 1)
         }
@@ -244,22 +244,22 @@ extension SheetController: UICollectionViewDataSource {
 
 extension SheetController: UICollectionViewDelegate {
     
-    func collectionView(collectionView: UICollectionView, shouldHighlightItemAtIndexPath indexPath: NSIndexPath) -> Bool {
+    func collectionView(_ collectionView: UICollectionView, shouldHighlightItemAt indexPath: IndexPath) -> Bool {
         return indexPath.section != 0
     }
     
-    func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath: NSIndexPath) {
-        collectionView.deselectItemAtIndexPath(indexPath, animated: true)
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        collectionView.deselectItem(at: indexPath, animated: true)
         
-        handleAction(actions[indexPath.item])
+        handleAction(action: actions[indexPath.item])
     }
     
 }
 
 extension SheetController: UICollectionViewDelegateFlowLayout {
     
-    func collectionView(collectionView: UICollectionView, layout: UICollectionViewLayout, sizeForItemAtIndexPath indexPath: NSIndexPath) -> CGSize {
-        return sizeForSheetItemAtIndexPath(indexPath)
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        return sizeForSheetItemAtIndexPath(indexPath: indexPath)
     }
     
 }
