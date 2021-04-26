@@ -9,7 +9,7 @@
 import UIKit
 
 // TODO: check if this is correct
-let KVOContext = UnsafeMutablePointer<()>()//UnsafeMutableRawPointer.init(bitPattern: 0)
+let KVOContext = UnsafeMutablePointer<()>.init(bitPattern: 0)//UnsafeMutableRawPointer.init(bitPattern: 0)
 
 class SheetActionCollectionViewCell: SheetCollectionViewCell {
 
